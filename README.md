@@ -42,6 +42,8 @@ cp config.example.json config.json
 
 Edit `config.json` and paste your bot token.
 
+Use only the raw token string from the Discord Developer Portal. Do **not** include a `Bot ` prefix or extra quotes.
+
 Optional: set `voice_channel_id` to force `/radio` to always join a specific VC.
 If omitted, it joins the user who ran `/radio`.
 
