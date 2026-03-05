@@ -453,6 +453,33 @@ class DayNightRadioBot(commands.Bot):
 
 bot = DayNightRadioBot()
 
+def get_target_voice_channel(guild: discord.Guild, invoker: discord.Member) -> Optional[discord.VoiceChannel]:
+    """
+    Resolve which voice channel /radio should use.
+    Priority:
+      1) config.json -> voice_channel_id (fixed channel)
+      2) invoker's current voice channel
+    """
+    cfg = read_config()
+    configured_vc_id = cfg.get("voice_channel_id")
+
+    if configured_vc_id is not None:
+        try:
+            vc_id = int(configured_vc_id)
+        except (TypeError, ValueError):
+            LOG.warning("Invalid voice_channel_id in config.json: %r", configured_vc_id)
+            return None
+
+        channel = guild.get_channel(vc_id)
+        if isinstance(channel, discord.VoiceChannel):
+            return channel
+        LOG.warning("Configured voice_channel_id %s was not found as a voice channel in guild %s", vc_id, guild.id)
+        return None
+
+    if invoker.voice and isinstance(invoker.voice.channel, discord.VoiceChannel):
+        return invoker.voice.channel
+    return None
+
 @bot.tree.command(name="radio", description="Start the day/night radio and post the control panel.")
 async def radio_cmd(interaction: discord.Interaction):
     if not interaction.guild:
@@ -462,17 +489,20 @@ async def radio_cmd(interaction: discord.Interaction):
         await interaction.response.send_message("Members only.", ephemeral=True)
         return
 
+    # Voice connection can exceed Discord's 3s initial response window.
+    await interaction.response.defer(thinking=True)
+
     player = bot.get_player(interaction.guild)
 
-    # Join the invoker's voice channel
-    if not interaction.user.voice or not interaction.user.voice.channel:
-        await interaction.response.send_message("Join a voice channel first, then run /radio.", ephemeral=True)
-        return
-    if not isinstance(interaction.user.voice.channel, discord.VoiceChannel):
-        await interaction.response.send_message("That voice channel type isn't supported.", ephemeral=True)
+    channel = get_target_voice_channel(interaction.guild, interaction.user)
+    if channel is None:
+        await interaction.followup.send(
+            "Couldn't resolve a voice channel. Set `voice_channel_id` in config.json or join a voice channel first.",
+            ephemeral=True,
+        )
         return
 
-    await player.ensure_voice(interaction.user.voice.channel)
+    await player.ensure_voice(channel)
     await player.play_loop()
 
     # Real-time mode
@@ -490,7 +520,7 @@ async def radio_cmd(interaction: discord.Interaction):
     )
     view = RadioView(player)
 
-    await interaction.response.send_message(embed=embed, view=view)
+    await interaction.followup.send(embed=embed, view=view)
 
 @bot.tree.command(name="nowplaying", description="Show the current track.")
 async def nowplaying_cmd(interaction: discord.Interaction):

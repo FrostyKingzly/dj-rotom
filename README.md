@@ -42,6 +42,9 @@ cp config.example.json config.json
 
 Edit `config.json` and paste your bot token.
 
+Optional: set `voice_channel_id` to force `/radio` to always join a specific VC.
+If omitted, it joins the user who ran `/radio`.
+
 ### 4) Add songs to playlists
 
 Edit:
@@ -73,7 +76,7 @@ Invite the bot with **bot + applications.commands** scopes, and give it:
 
 ## Commands
 
-- `/radio` — joins your VC, starts playback, posts the control panel
+- `/radio` — starts playback + control panel and joins configured `voice_channel_id` (or your VC if not configured)
 - `/nowplaying` — shows current track
 - `/reload_playlists` — reloads JSON from disk (requires Manage Server)
 
