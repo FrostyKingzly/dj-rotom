@@ -502,7 +502,16 @@ async def radio_cmd(interaction: discord.Interaction):
         )
         return
 
-    await player.ensure_voice(channel)
+    try:
+        await player.ensure_voice(channel)
+    except Exception as exc:
+        LOG.exception("Failed to connect to voice channel %s in guild %s", channel.id, interaction.guild.id)
+        await interaction.followup.send(
+            "I couldn't join that voice channel. Please verify I have **Connect/Speak** permissions and that voice dependencies are installed (`pip install -U PyNaCl`).",
+            ephemeral=True,
+        )
+        return
+
     await player.play_loop()
 
     # Real-time mode
