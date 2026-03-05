@@ -564,7 +564,21 @@ def main():
     token = cfg.get("token")
     if not token:
         raise ValueError("config.json is missing 'token'.")
-    bot.run(token)
+
+    token = str(token).strip()
+    if token.lower().startswith("bot "):
+        token = token[4:].strip()
+
+    if token.startswith('"') and token.endswith('"'):
+        token = token[1:-1].strip()
+
+    try:
+        bot.run(token)
+    except discord.errors.LoginFailure as exc:
+        raise ValueError(
+            "Discord rejected the bot token in config.json. Paste only the raw bot token "
+            "(no 'Bot ' prefix, no extra quotes, and no spaces/newlines)."
+        ) from exc
 
 if __name__ == "__main__":
     main()
