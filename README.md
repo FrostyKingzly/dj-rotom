@@ -71,6 +71,13 @@ Format is:
 python bot.py
 ```
 
+If startup fails with `Improper token has been passed`, re-check `config.json`:
+
+- Ensure the value is your **current** bot token (regenerate it in Developer Portal if needed).
+- Remove any surrounding quotes, backticks, or `Bot ` prefix.
+- Make sure there are no extra spaces/newlines before or after the token.
+- Confirm the token has the normal Discord format: three dot-separated parts.
+
 Invite the bot with **bot + applications.commands** scopes, and give it:
 - View Channels
 - Connect

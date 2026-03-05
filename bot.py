@@ -568,18 +568,50 @@ def read_config():
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+
+def normalize_token(raw_token: object) -> str:
+    token = str(raw_token).strip()
+
+    # Common copy/paste issues from hosting panels, markdown, and docs.
+    if token.lower().startswith("bot "):
+        token = token[4:].strip()
+
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in {'"', "'", "`"}:
+        token = token[1:-1].strip()
+
+    return token
+
+
+def validate_token(token: str) -> None:
+    placeholder_markers = {
+        "paste_your_discord_bot_token_here",
+        "your_bot_token_here",
+        "replace_me",
+        "changeme",
+    }
+
+    lowered = token.lower()
+    if lowered in placeholder_markers:
+        raise ValueError(
+            "config.json still contains a placeholder token. Paste the real bot token from "
+            "Discord Developer Portal > Bot > Token."
+        )
+
+    # Discord bot tokens are usually 50+ chars and include two dots.
+    if len(token) < 50 or token.count(".") != 2:
+        raise ValueError(
+            "Token format in config.json looks invalid. Paste only the raw bot token (three "
+            "dot-separated parts, no 'Bot ' prefix, no extra quotes, no spaces/newlines)."
+        )
+
 def main():
     cfg = read_config()
     token = cfg.get("token")
     if not token:
         raise ValueError("config.json is missing 'token'.")
 
-    token = str(token).strip()
-    if token.lower().startswith("bot "):
-        token = token[4:].strip()
-
-    if token.startswith('"') and token.endswith('"'):
-        token = token[1:-1].strip()
+    token = normalize_token(token)
+    validate_token(token)
 
     try:
         bot.run(token)
