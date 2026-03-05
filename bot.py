@@ -566,7 +566,24 @@ def read_config():
     if not os.path.exists(path):
         raise FileNotFoundError("Missing config.json. Copy config.example.json -> config.json and fill in your token.")
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        raw = f.read().strip()
+
+    if not raw:
+        raise ValueError(
+            "config.json is empty. Copy config.example.json -> config.json, then fill in your bot token."
+        )
+
+    try:
+        cfg = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "config.json contains invalid JSON. Check commas/quotes and compare with config.example.json."
+        ) from exc
+
+    if not isinstance(cfg, dict):
+        raise ValueError("config.json must be a JSON object like config.example.json.")
+
+    return cfg
 
 
 def normalize_token(raw_token: object) -> str:
